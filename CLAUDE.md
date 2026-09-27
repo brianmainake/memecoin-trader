@@ -52,11 +52,12 @@ Swap routing (Jupiter / launchpad program)
 Colour logic from the design diagram: everything except the executor is **read-only** and safe to build first. The executor **touches money**: build it last and keep it isolated.
 
 ### Design decisions
-- **Single machine**, Docker Compose. Laptop or a small VPS (VPS preferred for alerts while the laptop is closed).
+- **Single machine, Docker Compose.** Start on laptop; migrate to a small VPS (Hetzner CX22 ~€5/mo, or Fly.io / Railway) once alerts must be always-on. The Compose stack is portable so the move is a `git pull` + secrets sync, not a rewrite.
 - **One database.** TimescaleDB (Postgres + time-series extension) holds trades, candles, watchlists and alert rules. Continuous aggregates produce 1m/5m/1h volume and buy/sell counts. No separate analytics store.
 - **No Redis.** Live fan-out is Postgres `LISTEN/NOTIFY` (`pg_notify` from the ingestor; `LISTEN trade_events` in alert engine and API). In-process rolling windows for volume-spike detection. Add Redis only if fan-out actually hurts, which is unlikely for a single-user tool.
-- **Provider stream, not a self-run node.** Use a gRPC/Geyser stream, not RPC polling (too slow). **VERIFY** current free-tier limits and pricing.
-- **Telegram bot** for alerts (simplest for personal use).
+- **Provider stream, not a self-run node.** **Helius** for phase 1: start on the free tier for dev, upgrade to Standard ($49/mo) or Dev ($99/mo) once event volume warrants. Use its gRPC/Yellowstone or WebSocket stream, not RPC polling (too slow). Optional shortcut: prototype phase 1 with the Helius parsed-transaction API to skip raw decoding for the first week, then move the hot path to the raw stream. **VERIFY** current pricing and rate limits at build time.
+- **Tiered ingest.** Subscribe to every pump.fun event (needed for Trending / new-token discovery) and store all trades. Curve snapshots and wallet-level tracking run only for **watched** tokens — where "watched" means on the watchlist or promoted by a threshold (e.g. >5 SOL cumulative volume, or `status = 'graduated'`). Keeps the hot path cheap without losing discovery.
+- **Telegram bot** for alerts in MVP; delivery is behind a small `Delivery` interface so Discord / email / iOS push can be added later as adapters, not rewrites.
 - **Solana only, one launchpad first** (pump.fun and the pool it graduates into). Each additional venue multiplies decoder work.
 
 ### Language and stack
@@ -68,7 +69,7 @@ Colour logic from the design diagram: everything except the executor is **read-o
 ## 4. Components
 
 ### 4.1 Ingestor
-- Subscribes to the launchpad program and to the pools tokens migrate into (and to curve account updates for watched tokens).
+- Subscribes to the launchpad program and to the pools tokens migrate into. **Curve-account updates are subscribed to for watched tokens only** — a token is watched if it is on the watchlist or has passed the promotion threshold (see §3, tiered ingest).
 - Decodes with the program IDLs into a normalized event stream. Event types: `token_created`, `buy`, `sell`, `curve_complete`, `graduated` (migration to pool), plus pool swaps after graduation.
 - Dedupes by transaction signature. Ignores failed transactions. Default commitment is `confirmed` (fast, sub-second reorg risk is very low on Solana in practice); upgrade to `finalized` for the executor's pre-trade reads.
 - Reconnects with backoff and replays from the last seen slot where the provider allows.
@@ -268,9 +269,6 @@ pyproject.toml     # workspace root, uv-managed
 - **Clone/phishing sites:** typosquats of crypto apps exist. Irrelevant to a personal tool, but never connect a wallet to unknown sites.
 - **Legal:** this is a personal tool trading the user's own funds. Do not hold or move other people's funds or keys without legal advice; that can bring money-transmitter rules into play.
 
-## 9. Open questions for the user
+## 9. Decisions log
 
-- Run locally, or on a VPS for always-on alerts?
-- Which stream provider (Helius, Triton, QuickNode) and what budget?
-- Track all new launchpad tokens, or only a watchlist plus tokens that pass a threshold (affects data volume)?
-- Should Telegram be the only alert channel?
+The high-level project decisions in §3 are stable and should only change with a corresponding edit to this file. Ambient, drift-prone values (current Helius pricing tier, exact promotion threshold, SOL/USD source, chosen commitment level, pump.fun graduation threshold, program addresses) live in `docs/decisions.md` and should be updated whenever they change. Any bullet marked **VERIFY** in this file resolves to a line in `docs/decisions.md` with a source and a date.
