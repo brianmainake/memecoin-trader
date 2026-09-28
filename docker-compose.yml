@@ -1,0 +1,25 @@
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: memecoin-timescaledb
+    environment:
+      POSTGRES_DB: memecoin
+      POSTGRES_USER: memecoin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-memecoin}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U memecoin -d memecoin"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+# Python services (ingestor, alerts, api, executor) will be added to this
+# compose file as they land. Phase 1 runs the ingestor locally via:
+#   uv run python -m ingestor
+
+volumes:
+  timescale_data:

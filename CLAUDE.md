@@ -113,7 +113,11 @@ CREATE TABLE trades (
   price_sol         NUMERIC(40, 20) NOT NULL,
   sol_usd           NUMERIC(20, 8),
   venue             TEXT NOT NULL CHECK (venue IN ('curve','pool')),
-  PRIMARY KEY (signature, event_index)
+  -- 'time' is in the PK because Timescale requires the partitioning
+  -- column in every unique constraint on a hypertable. Real uniqueness
+  -- is still (signature, event_index) since 'time' is deterministic
+  -- per signature.
+  PRIMARY KEY (signature, event_index, time)
 );
 SELECT create_hypertable('trades', 'time');
 CREATE INDEX ON trades (mint, time DESC);

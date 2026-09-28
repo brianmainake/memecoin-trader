@@ -1,0 +1,18 @@
+[project]
+name = "decoder"
+version = "0.0.1"
+description = "Program-IDL decoders for pump.fun and downstream pools"
+requires-python = ">=3.12"
+dependencies = [
+    "shared",
+]
+
+[tool.uv.sources]
+shared = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/decoder"]
