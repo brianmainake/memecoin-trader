@@ -49,22 +49,22 @@ export default function CandleChart({ mint }: { mint: string }) {
       autoSize: true,
       layout: {
         background: { color: "transparent" },
-        textColor: "#9ca3af",
+        textColor: "#ffffff",
       },
       grid: {
-        vertLines: { color: "#1f2937" },
-        horzLines: { color: "#1f2937" },
+        vertLines: { color: "rgba(255,255,255,0.06)" },
+        horzLines: { color: "rgba(255,255,255,0.06)" },
       },
-      timeScale: { timeVisible: true, secondsVisible: false, borderColor: "#374151" },
-      rightPriceScale: { borderColor: "#374151" },
+      timeScale: { timeVisible: true, secondsVisible: false, borderColor: "#ffffff" },
+      rightPriceScale: { borderColor: "#ffffff" },
       crosshair: { mode: 1 },
     });
     const series = chart.addSeries(CandlestickSeries, {
-      upColor: "#22c55e",
-      downColor: "#ef4444",
+      upColor: "#0044ff",
+      downColor: "#ff0033",
       borderVisible: false,
-      wickUpColor: "#22c55e",
-      wickDownColor: "#ef4444",
+      wickUpColor: "#0044ff",
+      wickDownColor: "#ff0033",
       priceFormat: { type: "price", precision: 12, minMove: 1e-12 },
     });
     chartRef.current = chart;
@@ -109,17 +109,17 @@ export default function CandleChart({ mint }: { mint: string }) {
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-2">
-        <h2 className="text-lg">Candles</h2>
-        <div className="ml-auto flex gap-1 text-xs">
+      <div className="flex items-center gap-3 mb-3">
+        <h2 className="text-xs uppercase tracking-widest text-white/70">Candles</h2>
+        <div className="ml-auto flex">
           {INTERVALS.map((i) => (
             <button
               key={i}
               onClick={() => setIntervalKey(i)}
-              className={`px-2 py-1 rounded transition-colors ${
+              className={`px-3 py-1 text-[10px] font-bold uppercase tracking-widest border-2 -ml-[2px] first:ml-0 transition-colors ${
                 intervalKey === i
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                  ? "bg-white text-black border-white"
+                  : "bg-black text-white border-white/40 hover:border-white"
               }`}
             >
               {i}
@@ -127,8 +127,12 @@ export default function CandleChart({ mint }: { mint: string }) {
           ))}
         </div>
       </div>
-      {error && <div className="text-red-400 text-sm mb-2">{error}</div>}
-      <div ref={containerRef} className="h-[400px] border border-gray-800 rounded" />
+      {error && (
+        <div className="border-2 border-brand-red bg-brand-red/10 text-brand-red px-3 py-1.5 mb-2 text-xs uppercase tracking-widest">
+          {error}
+        </div>
+      )}
+      <div ref={containerRef} className="h-[400px] border-2 border-white" />
     </div>
   );
 }

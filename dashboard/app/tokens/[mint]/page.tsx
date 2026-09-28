@@ -57,64 +57,108 @@ export default function TokenDetailPage({
     return () => ws.close();
   }, [mint]);
 
+  const isGraduated = token?.status === "graduated";
+
   return (
-    <main className="p-6 max-w-6xl mx-auto w-full">
-      <Link href="/" className="text-sm text-blue-400 hover:underline">
-        ← back
-      </Link>
-      <h1 className="text-lg mt-2 font-mono break-all">{mint}</h1>
-      {error && <div className="text-red-400 text-sm mt-2">{error}</div>}
-      {token && (
-        <div className="text-sm text-gray-400 mt-2 mb-6">
-          {token.symbol ?? "—"} · <span className="capitalize">{token.status}</span> ·{" "}
-          {token.decimals} decimals
-          {token.pool_address && <> · pool {shortAddr(token.pool_address, 4)}</>}
-        </div>
-      )}
-      <div className="mb-8">
-        <CandleChart mint={mint} />
-      </div>
-      <div className="flex items-center gap-2 mb-2">
-        <h2 className="text-lg">Recent trades</h2>
-        <span className="text-xs text-gray-500 rounded-full bg-gray-800 px-2 py-0.5">
-          live
-        </span>
-      </div>
-      <table className="w-full text-sm">
-        <thead className="text-left text-gray-400 border-b border-gray-800">
-          <tr>
-            <th className="py-2 font-normal">Time</th>
-            <th className="font-normal">Side</th>
-            <th className="font-normal">Wallet</th>
-            <th className="font-normal">SOL</th>
-            <th className="font-normal">Tokens</th>
-            <th className="font-normal">Sig</th>
-          </tr>
-        </thead>
-        <tbody>
-          {trades.map((t) => (
-            <tr key={t.signature} className="border-b border-gray-900">
-              <td className="py-1 text-xs text-gray-400">{formatTime(t.time)}</td>
-              <td className={t.side === "buy" ? "text-green-400" : "text-red-400"}>
-                {t.side}
-              </td>
-              <td className="font-mono text-xs">{shortAddr(t.wallet, 4)}</td>
-              <td>{formatSol(t.sol_lamports)}</td>
-              <td>{formatTokenAmount(t.token_base_units, token?.decimals ?? 6)}</td>
-              <td className="font-mono text-xs text-gray-500">
-                {shortAddr(t.signature, 4)}
-              </td>
-            </tr>
-          ))}
-          {trades.length === 0 && (
-            <tr>
-              <td colSpan={6} className="py-6 text-center text-gray-500">
-                No trades yet.
-              </td>
-            </tr>
+    <main className="min-h-screen">
+      <header className="border-b-2 border-white px-6 py-6">
+        <div className="max-w-7xl mx-auto">
+          <Link
+            href="/"
+            className="text-xs uppercase tracking-widest text-white/60 hover:text-brand-yellow transition-colors inline-block mb-3"
+          >
+            ← back
+          </Link>
+          <div className="flex items-baseline gap-4 flex-wrap">
+            <h1 className="font-mono text-lg md:text-xl break-all">{mint}</h1>
+            {token && (
+              <span
+                className={`inline-block px-2 py-0.5 text-[10px] uppercase tracking-widest font-bold shrink-0 ${
+                  isGraduated ? "bg-brand-blue text-white" : "bg-brand-yellow text-black"
+                }`}
+              >
+                {token.status}
+              </span>
+            )}
+          </div>
+          {token && (
+            <div className="text-xs uppercase tracking-widest text-white/50 mt-2">
+              {token.symbol ?? "—"} · {token.decimals} decimals
+              {token.pool_address && <> · pool {shortAddr(token.pool_address, 4)}</>}
+              {token.graduated_at && <> · graduated {formatTime(token.graduated_at)}</>}
+            </div>
           )}
-        </tbody>
-      </table>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-10">
+        {error && (
+          <div className="border-2 border-brand-red bg-brand-red/10 text-brand-red px-4 py-2 text-sm uppercase tracking-widest">
+            {error}
+          </div>
+        )}
+
+        <section>
+          <CandleChart mint={mint} />
+        </section>
+
+        <section>
+          <div className="flex items-center gap-3 mb-3">
+            <h2 className="text-xs uppercase tracking-widest text-white/70">Recent trades</h2>
+            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-brand-yellow">
+              <span className="live-dot inline-block w-1.5 h-1.5 bg-brand-yellow rounded-full" />
+              live
+            </div>
+          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-white/50 uppercase text-[10px] tracking-widest">
+                <th className="text-left py-3 font-normal border-b-2 border-white">Time</th>
+                <th className="text-left font-normal border-b-2 border-white">Side</th>
+                <th className="text-left font-normal border-b-2 border-white">Wallet</th>
+                <th className="text-right font-normal border-b-2 border-white">SOL</th>
+                <th className="text-right font-normal border-b-2 border-white">Tokens</th>
+                <th className="text-right font-normal border-b-2 border-white pr-1">Sig</th>
+              </tr>
+            </thead>
+            <tbody>
+              {trades.map((t) => (
+                <tr key={t.signature} className="border-b border-white/10">
+                  <td className="py-2 text-xs text-white/60 tabular-nums">
+                    {formatTime(t.time)}
+                  </td>
+                  <td>
+                    <span
+                      className={`inline-block px-2 py-0.5 text-[10px] uppercase tracking-widest font-bold ${
+                        t.side === "buy"
+                          ? "bg-brand-blue text-white"
+                          : "bg-brand-red text-white"
+                      }`}
+                    >
+                      {t.side}
+                    </span>
+                  </td>
+                  <td className="font-mono text-xs text-white/80">{shortAddr(t.wallet, 4)}</td>
+                  <td className="text-right tabular-nums">{formatSol(t.sol_lamports)}</td>
+                  <td className="text-right tabular-nums">
+                    {formatTokenAmount(t.token_base_units, token?.decimals ?? 6)}
+                  </td>
+                  <td className="text-right font-mono text-xs text-white/40 pr-1">
+                    {shortAddr(t.signature, 4)}
+                  </td>
+                </tr>
+              ))}
+              {trades.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-10 text-center text-white/40 uppercase tracking-widest text-xs">
+                    no trades yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </section>
+      </div>
     </main>
   );
 }
