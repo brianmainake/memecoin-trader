@@ -6,7 +6,7 @@ Ambient, drift-prone facts. Every **VERIFY** bullet in `CLAUDE.md` should resolv
 
 - **Ingest commitment level:** `confirmed` — 2026-09-27. Source: CLAUDE.md §4.1.
 - **Executor pre-trade commitment level:** `finalized` — 2026-09-27. Source: CLAUDE.md §4.1.
-- **pump.fun program ID:** _unverified_ — look up at build time from the official docs before the first decoder is written.
+- **pump.fun program ID:** `6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P` — 2026-09-27, hardcoded from public knowledge. **VERIFY** on solscan.io against a recent buy transaction before writing the decoder or wiring the executor; source: pump.fun docs.
 - **pump.fun graduation threshold (SOL raised):** _unverified_ — historically reported around 85 SOL; confirm from on-chain curve state before relying on it.
 - **DEX pump.fun migrates into:** believed to be PumpSwap (formerly Raydium routing). _Unverified_ — confirm before the executor is wired up.
 
