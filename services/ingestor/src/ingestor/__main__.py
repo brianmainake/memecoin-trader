@@ -7,7 +7,7 @@ import time
 import asyncpg
 
 from decoder.programs import PUMPFUN_PROGRAM_ID
-from shared.config import DatabaseConfig, HeliusConfig
+from shared.config import DatabaseConfig, HeliusConfig, load_dotenv
 
 from ingestor.stream import stream_pumpfun_logs
 
@@ -15,6 +15,7 @@ log = logging.getLogger("ingestor")
 
 
 async def run() -> None:
+    load_dotenv()
     logging.basicConfig(
         level=os.environ.get("LOG_LEVEL", "INFO"),
         format="%(asctime)s %(levelname)s %(name)s %(message)s",

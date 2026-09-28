@@ -2,6 +2,19 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
+
+
+def load_dotenv(path: Path = Path(".env")) -> None:
+    """Best-effort .env loader. Real env vars always win over file values."""
+    if not path.is_file():
+        return
+    for raw in path.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, val = line.partition("=")
+        os.environ.setdefault(key.strip(), val.strip().strip('"').strip("'"))
 
 
 def env(key: str, default: str | None = None) -> str:
