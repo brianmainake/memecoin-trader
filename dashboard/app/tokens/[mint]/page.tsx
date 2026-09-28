@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 
+import CandleChart from "@/components/CandleChart";
 import {
   API_BASE,
   getRecentTrades,
@@ -70,6 +71,9 @@ export default function TokenDetailPage({
           {token.pool_address && <> · pool {shortAddr(token.pool_address, 4)}</>}
         </div>
       )}
+      <div className="mb-8">
+        <CandleChart mint={mint} />
+      </div>
       <div className="flex items-center gap-2 mb-2">
         <h2 className="text-lg">Recent trades</h2>
         <span className="text-xs text-gray-500 rounded-full bg-gray-800 px-2 py-0.5">
