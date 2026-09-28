@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 
 import CandleChart from "@/components/CandleChart";
 import {
@@ -51,114 +51,181 @@ export default function TokenDetailPage({
           ...prev.slice(0, 49),
         ]);
       } catch {
-        // ignore bad frames
+        // ignore
       }
     };
     return () => ws.close();
   }, [mint]);
 
+  const stats = useMemo(() => {
+    const totalSol = trades.reduce((s, t) => s + Number(t.sol_lamports || 0), 0);
+    const buys = trades.filter((t) => t.side === "buy").length;
+    const sells = trades.filter((t) => t.side === "sell").length;
+    const lastPrice = trades.find((t) => t.price_sol && t.price_sol !== "-")?.price_sol;
+    return { totalSol, buys, sells, count: trades.length, lastPrice };
+  }, [trades]);
+
   const isGraduated = token?.status === "graduated";
 
   return (
-    <main className="min-h-screen">
-      <header className="border-b-2 border-white px-6 py-6">
-        <div className="max-w-7xl mx-auto">
+    <main>
+      <nav className="sticky top-0 z-10 backdrop-blur bg-black/70 border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <Link
             href="/"
-            className="text-xs uppercase tracking-widest text-white/60 hover:text-brand-yellow transition-colors inline-block mb-3"
+            className="text-sm text-white/60 hover:text-white transition-colors inline-flex items-center gap-1.5"
           >
-            ← back
+            <span aria-hidden>←</span> Back
           </Link>
-          <div className="flex items-baseline gap-4 flex-wrap">
-            <h1 className="font-mono text-lg md:text-xl break-all">{mint}</h1>
+        </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        <section>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="font-mono text-base md:text-lg break-all">{mint}</h1>
             {token && (
               <span
-                className={`inline-block px-2 py-0.5 text-[10px] uppercase tracking-widest font-bold shrink-0 ${
-                  isGraduated ? "bg-brand-blue text-white" : "bg-brand-yellow text-black"
+                className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] rounded-full font-medium ${
+                  isGraduated
+                    ? "bg-brand-blue/10 text-brand-blue"
+                    : "bg-brand-yellow/10 text-brand-yellow"
                 }`}
               >
+                <span
+                  className={`w-1 h-1 rounded-full ${
+                    isGraduated ? "bg-brand-blue" : "bg-brand-yellow"
+                  }`}
+                />
                 {token.status}
               </span>
             )}
           </div>
           {token && (
-            <div className="text-xs uppercase tracking-widest text-white/50 mt-2">
-              {token.symbol ?? "—"} · {token.decimals} decimals
-              {token.pool_address && <> · pool {shortAddr(token.pool_address, 4)}</>}
-              {token.graduated_at && <> · graduated {formatTime(token.graduated_at)}</>}
+            <div className="text-sm text-white/50 mt-2 flex flex-wrap gap-x-4 gap-y-1">
+              <span>
+                {token.symbol ?? "—"} · {token.decimals} decimals
+              </span>
+              {token.pool_address && <span>pool {shortAddr(token.pool_address, 4)}</span>}
+              {token.graduated_at && <span>graduated {formatTime(token.graduated_at)}</span>}
             </div>
           )}
-        </div>
-      </header>
+        </section>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-10">
         {error && (
-          <div className="border-2 border-brand-red bg-brand-red/10 text-brand-red px-4 py-2 text-sm uppercase tracking-widest">
+          <div className="border border-brand-red/30 bg-brand-red/5 text-brand-red px-4 py-3 text-sm rounded-2xl">
             {error}
           </div>
         )}
+
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Stat
+            label="Last Price (SOL)"
+            value={stats.lastPrice ? Number(stats.lastPrice).toExponential(2) : "—"}
+            mono
+          />
+          <Stat label="Recent Volume" value={formatSol(String(stats.totalSol))} />
+          <Stat
+            label="Buys · Sells"
+            value={
+              <>
+                <span className="text-brand-blue">{stats.buys}</span>
+                <span className="text-white/25 px-1.5">·</span>
+                <span className="text-brand-red">{stats.sells}</span>
+              </>
+            }
+          />
+          <Stat label="Trades Shown" value={stats.count.toString()} />
+        </section>
 
         <section>
           <CandleChart mint={mint} />
         </section>
 
         <section>
-          <div className="flex items-center gap-3 mb-3">
-            <h2 className="text-xs uppercase tracking-widest text-white/70">Recent trades</h2>
-            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-brand-yellow">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-medium">Recent Trades</h2>
+            <div className="flex items-center gap-1.5 text-xs text-brand-yellow">
               <span className="live-dot inline-block w-1.5 h-1.5 bg-brand-yellow rounded-full" />
-              live
+              Live
             </div>
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-white/50 uppercase text-[10px] tracking-widest">
-                <th className="text-left py-3 font-normal border-b-2 border-white">Time</th>
-                <th className="text-left font-normal border-b-2 border-white">Side</th>
-                <th className="text-left font-normal border-b-2 border-white">Wallet</th>
-                <th className="text-right font-normal border-b-2 border-white">SOL</th>
-                <th className="text-right font-normal border-b-2 border-white">Tokens</th>
-                <th className="text-right font-normal border-b-2 border-white pr-1">Sig</th>
-              </tr>
-            </thead>
-            <tbody>
-              {trades.map((t) => (
-                <tr key={t.signature} className="border-b border-white/10">
-                  <td className="py-2 text-xs text-white/60 tabular-nums">
-                    {formatTime(t.time)}
-                  </td>
-                  <td>
-                    <span
-                      className={`inline-block px-2 py-0.5 text-[10px] uppercase tracking-widest font-bold ${
-                        t.side === "buy"
-                          ? "bg-brand-blue text-white"
-                          : "bg-brand-red text-white"
-                      }`}
-                    >
-                      {t.side}
-                    </span>
-                  </td>
-                  <td className="font-mono text-xs text-white/80">{shortAddr(t.wallet, 4)}</td>
-                  <td className="text-right tabular-nums">{formatSol(t.sol_lamports)}</td>
-                  <td className="text-right tabular-nums">
-                    {formatTokenAmount(t.token_base_units, token?.decimals ?? 6)}
-                  </td>
-                  <td className="text-right font-mono text-xs text-white/40 pr-1">
-                    {shortAddr(t.signature, 4)}
-                  </td>
-                </tr>
-              ))}
-              {trades.length === 0 && (
+          <div className="border border-white/10 rounded-2xl overflow-hidden bg-white/[0.01]">
+            <table className="w-full text-sm">
+              <thead className="bg-white/[0.03] text-white/50 text-xs">
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-white/40 uppercase tracking-widest text-xs">
-                    no trades yet
-                  </td>
+                  <th className="text-left px-5 py-3 font-medium">Time</th>
+                  <th className="text-left font-medium">Side</th>
+                  <th className="text-left font-medium">Wallet</th>
+                  <th className="text-right font-medium">SOL</th>
+                  <th className="text-right font-medium">Tokens</th>
+                  <th className="text-right font-medium pr-5">Sig</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {trades.map((t) => (
+                  <tr key={t.signature} className="border-t border-white/5">
+                    <td className="px-5 py-2.5 text-xs text-white/70 tabular-nums">
+                      {formatTime(t.time)}
+                    </td>
+                    <td>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 text-[11px] rounded-full font-medium capitalize ${
+                          t.side === "buy"
+                            ? "bg-brand-blue/10 text-brand-blue"
+                            : "bg-brand-red/10 text-brand-red"
+                        }`}
+                      >
+                        {t.side}
+                      </span>
+                    </td>
+                    <td className="font-mono text-xs text-white/80">
+                      {shortAddr(t.wallet, 4)}
+                    </td>
+                    <td className="text-right font-medium tabular-nums">
+                      {formatSol(t.sol_lamports)}
+                    </td>
+                    <td className="text-right tabular-nums text-white/80">
+                      {formatTokenAmount(t.token_base_units, token?.decimals ?? 6)}
+                    </td>
+                    <td className="text-right font-mono text-xs text-white/40 pr-5">
+                      {shortAddr(t.signature, 4)}
+                    </td>
+                  </tr>
+                ))}
+                {trades.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-white/40 text-sm">
+                      No trades yet
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </section>
       </div>
     </main>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+}) {
+  return (
+    <div className="border border-white/10 rounded-2xl p-4 bg-white/[0.02]">
+      <div className="text-xs text-white/50">{label}</div>
+      <div
+        className={`text-xl font-semibold mt-1 tabular-nums ${mono ? "font-mono" : ""}`}
+      >
+        {value}
+      </div>
+    </div>
   );
 }

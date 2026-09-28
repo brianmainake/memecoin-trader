@@ -109,17 +109,17 @@ export default function CandleChart({ mint }: { mint: string }) {
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-3">
-        <h2 className="text-xs uppercase tracking-widest text-white/70">Candles</h2>
-        <div className="ml-auto flex">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-medium">Chart</h2>
+        <div className="inline-flex gap-1 p-1 bg-white/[0.04] border border-white/10 rounded-full">
           {INTERVALS.map((i) => (
             <button
               key={i}
               onClick={() => setIntervalKey(i)}
-              className={`px-3 py-1 text-[10px] font-bold uppercase tracking-widest border-2 -ml-[2px] first:ml-0 transition-colors ${
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                 intervalKey === i
-                  ? "bg-white text-black border-white"
-                  : "bg-black text-white border-white/40 hover:border-white"
+                  ? "bg-white text-black"
+                  : "text-white/70 hover:text-white"
               }`}
             >
               {i}
@@ -128,11 +128,11 @@ export default function CandleChart({ mint }: { mint: string }) {
         </div>
       </div>
       {error && (
-        <div className="border-2 border-brand-red bg-brand-red/10 text-brand-red px-3 py-1.5 mb-2 text-xs uppercase tracking-widest">
+        <div className="border border-brand-red/30 bg-brand-red/5 text-brand-red px-3 py-1.5 mb-3 text-xs rounded-lg">
           {error}
         </div>
       )}
-      <div ref={containerRef} className="h-[400px] border-2 border-white" />
+      <div ref={containerRef} className="h-[420px] border border-white/10 rounded-2xl bg-white/[0.01]" />
     </div>
   );
 }

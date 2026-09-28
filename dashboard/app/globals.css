@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #000000;
+  --background: #0a0a0a;
   --foreground: #ffffff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-brand-red: #ff0033;
-  --color-brand-blue: #0044ff;
-  --color-brand-yellow: #ffd800;
+  --color-brand-red: #ff3b4e;
+  --color-brand-blue: #4d7bff;
+  --color-brand-yellow: #ffcc00;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -19,11 +19,13 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11", "tnum";
+  -webkit-font-smoothing: antialiased;
 }
 
 @keyframes live-pulse {
   0%, 100% { opacity: 1; }
-  50%      { opacity: 0.35; }
+  50%      { opacity: 0.4; }
 }
 .live-dot {
   animation: live-pulse 1.4s ease-in-out infinite;
