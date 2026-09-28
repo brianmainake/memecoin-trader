@@ -17,8 +17,9 @@ cp .env.example .env
 # 2. TimescaleDB — schema in db/migrations/ runs on first boot
 docker compose up -d timescaledb
 
-# 3. Python workspace
-uv sync
+# 3. Python workspace (--all-packages installs every workspace member,
+# not just the root)
+uv sync --all-packages
 
 # 4. Ingestor (phase 1 stub: schema-check then idle)
 uv run python -m ingestor
