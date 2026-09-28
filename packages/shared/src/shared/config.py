@@ -39,6 +39,7 @@ class DatabaseConfig:
 class HeliusConfig:
     api_key: str
     rpc_endpoint: str
+    enhanced_api_base: str
 
     @classmethod
     def from_env(cls) -> HeliusConfig:
@@ -51,6 +52,7 @@ class HeliusConfig:
         return cls(
             api_key=api_key,
             rpc_endpoint=env("HELIUS_RPC_ENDPOINT", "https://mainnet.helius-rpc.com"),
+            enhanced_api_base=env("HELIUS_ENHANCED_API_BASE", "https://api.helius.xyz/v0"),
         )
 
     @property

@@ -36,3 +36,6 @@ build/
 .next/
 coverage/
 *.tsbuildinfo
+
+# Raw captured fixtures — curate into fixtures/tests/ before committing.
+fixtures/live/

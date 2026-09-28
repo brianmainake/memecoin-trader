@@ -1,28 +1,36 @@
+import argparse
 import asyncio
 import logging
 import os
 import sys
 import time
+from pathlib import Path
 
 import asyncpg
 
 from decoder.programs import PUMPFUN_PROGRAM_ID
 from shared.config import DatabaseConfig, HeliusConfig, load_dotenv
 
+from ingestor.capture import capture
 from ingestor.stream import stream_pumpfun_logs
 
 log = logging.getLogger("ingestor")
 
 
-async def run() -> None:
+async def run(args: argparse.Namespace) -> None:
     load_dotenv()
     logging.basicConfig(
         level=os.environ.get("LOG_LEVEL", "INFO"),
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
-    db_cfg = DatabaseConfig.from_env()
     helius_cfg = HeliusConfig.from_env()
 
+    if args.capture:
+        n = await capture(helius_cfg, args.capture, args.capture_dir)
+        log.info("capture complete: %d transactions written to %s", n, args.capture_dir)
+        return
+
+    db_cfg = DatabaseConfig.from_env()
     conn = await asyncpg.connect(db_cfg.dsn)
     try:
         row = await conn.fetchrow("SELECT to_regclass('public.trades') AS trades_tbl")
@@ -57,8 +65,23 @@ async def _log_stream_loop(helius_cfg: HeliusConfig) -> None:
 
 
 def entrypoint() -> None:
+    parser = argparse.ArgumentParser(prog="ingestor")
+    parser.add_argument(
+        "--capture",
+        type=int,
+        metavar="N",
+        help="Capture N pump.fun transactions to --capture-dir and exit.",
+    )
+    parser.add_argument(
+        "--capture-dir",
+        type=Path,
+        default=Path("fixtures/live"),
+        help="Where to write captured fixtures (default: fixtures/live).",
+    )
+    args = parser.parse_args()
+
     try:
-        asyncio.run(run())
+        asyncio.run(run(args))
     except KeyboardInterrupt:
         pass
     except RuntimeError as exc:
