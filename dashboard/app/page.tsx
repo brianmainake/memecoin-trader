@@ -134,7 +134,7 @@ export default function HomePage() {
                     {t.trade_count ?? "—"}
                   </td>
                   <td className="text-right text-xs tabular-nums">
-                    <span className="text-brand-blue font-medium">{t.buy_count ?? 0}</span>
+                    <span className="text-brand-green font-medium">{t.buy_count ?? 0}</span>
                     <span className="text-white/25 px-1.5">·</span>
                     <span className="text-brand-red font-medium">{t.sell_count ?? 0}</span>
                   </td>

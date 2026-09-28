@@ -60,11 +60,11 @@ export default function CandleChart({ mint }: { mint: string }) {
       crosshair: { mode: 1 },
     });
     const series = chart.addSeries(CandlestickSeries, {
-      upColor: "#0044ff",
-      downColor: "#ff0033",
+      upColor: "#22c55e",
+      downColor: "#ff3b4e",
       borderVisible: false,
-      wickUpColor: "#0044ff",
-      wickDownColor: "#ff0033",
+      wickUpColor: "#22c55e",
+      wickDownColor: "#ff3b4e",
       priceFormat: { type: "price", precision: 12, minMove: 1e-12 },
     });
     chartRef.current = chart;

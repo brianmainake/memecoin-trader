@@ -129,7 +129,7 @@ export default function TokenDetailPage({
             label="Buys · Sells"
             value={
               <>
-                <span className="text-brand-blue">{stats.buys}</span>
+                <span className="text-brand-green">{stats.buys}</span>
                 <span className="text-white/25 px-1.5">·</span>
                 <span className="text-brand-red">{stats.sells}</span>
               </>
@@ -172,7 +172,7 @@ export default function TokenDetailPage({
                       <span
                         className={`inline-flex items-center px-2 py-0.5 text-[11px] rounded-full font-medium capitalize ${
                           t.side === "buy"
-                            ? "bg-brand-blue/10 text-brand-blue"
+                            ? "bg-brand-green/10 text-brand-green"
                             : "bg-brand-red/10 text-brand-red"
                         }`}
                       >
