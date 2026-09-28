@@ -8,20 +8,36 @@ from shared.events import Side, TradeEvent, Venue
 
 _LAMPORTS_PER_SOL = Decimal(10**9)
 _PRICE_QUANT = Decimal(10) ** -20  # matches trades.price_sol NUMERIC(40, 20)
+_WSOL_MINT = "So11111111111111111111111111111111111111112"
 
 
 def parse_pumpfun_swap(payload: dict[str, Any]) -> TradeEvent | None:
-    """Extract a pump.fun bonding-curve swap from a Helius enhanced transaction.
-
-    Returns None when the payload is not a pump.fun swap this parser handles.
-    Callers should count None returns to catch decoder drift when pump.fun
-    upgrades its program (see CLAUDE.md §4.1).
+    """Strict wrapper for the pre-graduation pump.fun pipeline.
+    Accepts only source == 'PUMP_FUN'; use parse_swap for post-graduation.
     """
-    if payload.get("source") != "PUMP_FUN":
-        return None
+    return parse_swap(payload, allowed_sources={"PUMP_FUN"})
+
+
+def parse_swap(
+    payload: dict[str, Any],
+    allowed_sources: set[str] | None = None,
+) -> TradeEvent | None:
+    """Parse a Helius-parsed SWAP into a normalized TradeEvent.
+
+    Works for pump.fun bonding swaps and post-graduation swaps routed
+    through aggregators (Jupiter, PumpSwap direct, Raydium, ...).
+    Skips WSOL when identifying the trader's target token so aggregator
+    swaps that wrap SOL as an intermediate do not confuse the direction.
+
+    allowed_sources: if given, only accept those Helius 'source' values;
+    otherwise accept any.
+    """
     if payload.get("type") != "SWAP":
         return None
     if payload.get("transactionError") is not None:
+        return None
+    source = payload.get("source")
+    if allowed_sources is not None and source not in allowed_sources:
         return None
 
     signature = payload.get("signature")
@@ -31,7 +47,11 @@ def parse_pumpfun_swap(payload: dict[str, Any]) -> TradeEvent | None:
     if signature is None or slot is None or timestamp is None or not fee_payer:
         return None
 
-    tt = _pick_transfer_involving(payload.get("tokenTransfers") or [], fee_payer)
+    tt = _pick_transfer_involving(
+        payload.get("tokenTransfers") or [],
+        fee_payer,
+        exclude_mints={_WSOL_MINT},
+    )
     if tt is None:
         return None
     mint = tt.get("mint")
@@ -59,6 +79,8 @@ def parse_pumpfun_swap(payload: dict[str, Any]) -> TradeEvent | None:
     token_amount = token_base_units / Decimal(10**decimals)
     price_sol = (sol_amount / token_amount).quantize(_PRICE_QUANT)
 
+    venue = Venue.CURVE if source == "PUMP_FUN" else Venue.POOL
+
     return TradeEvent(
         time=datetime.fromtimestamp(int(timestamp), tz=UTC),
         signature=signature,
@@ -72,14 +94,18 @@ def parse_pumpfun_swap(payload: dict[str, Any]) -> TradeEvent | None:
         token_decimals=decimals,
         price_sol=price_sol,
         sol_usd=None,
-        venue=Venue.CURVE,
+        venue=venue,
     )
 
 
 def _pick_transfer_involving(
-    transfers: list[dict[str, Any]], wallet: str
+    transfers: list[dict[str, Any]],
+    wallet: str,
+    exclude_mints: set[str] | None = None,
 ) -> dict[str, Any] | None:
     for t in transfers:
+        if exclude_mints and t.get("mint") in exclude_mints:
+            continue
         if t.get("fromUserAccount") == wallet or t.get("toUserAccount") == wallet:
             return t
     return None

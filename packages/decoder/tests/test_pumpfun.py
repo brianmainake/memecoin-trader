@@ -4,7 +4,7 @@ import json
 from decimal import Decimal
 from pathlib import Path
 
-from decoder.pumpfun import parse_pumpfun_swap
+from decoder.pumpfun import parse_pumpfun_swap, parse_swap
 from shared.events import Side, Venue
 
 FIXTURES = Path(__file__).resolve().parents[3] / "fixtures" / "tests" / "pumpfun"
@@ -57,3 +57,23 @@ def test_rejects_pumpfun_unknown_type() -> None:
 
 def test_rejects_empty_payload() -> None:
     assert parse_pumpfun_swap({}) is None
+
+
+def test_parse_swap_jupiter_post_grad() -> None:
+    """A graduated token traded via Jupiter should parse when the strict
+    source filter is dropped. Venue flips to POOL. WSOL is correctly
+    skipped when picking the trader's target token transfer."""
+    event = parse_swap(_load("jupiter_swap.json"))
+    assert event is not None
+    assert event.side == Side.BUY
+    assert event.venue == Venue.POOL
+    assert event.mint == "AUdSCZzU2Z84LPtjABi6pMWp1Qh5FFFm4fiHXydja4N3"
+    assert event.wallet == "8FVa6HichsF8wdRsNNfYuookw81MEPyB7CsPvNrBmyKc"
+    assert event.sol_lamports == Decimal("2166778759")
+    assert event.token_base_units == Decimal("35333491543883")
+    assert event.token_decimals == 6
+
+
+def test_parse_swap_still_rejects_non_swap() -> None:
+    assert parse_swap(_load("pumpfun_unknown.json")) is None
+    assert parse_swap({}) is None

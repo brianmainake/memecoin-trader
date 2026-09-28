@@ -13,6 +13,7 @@ from shared.config import DatabaseConfig, HeliusConfig, load_dotenv
 from ingestor.capture import capture
 from ingestor.graduation import run_poller as run_graduation_poller
 from ingestor.pipeline import run_pipeline
+from ingestor.post_grad import run_poller as run_post_grad_poller
 
 log = logging.getLogger("ingestor")
 
@@ -37,20 +38,22 @@ async def run(args: argparse.Namespace) -> None:
             row = await conn.fetchrow("SELECT to_regclass('public.trades') AS trades_tbl")
             if not row or row["trades_tbl"] is None:
                 raise RuntimeError("trades table missing; run db migrations first")
-        log.info("schema ok; starting pipeline + graduation poller (program=%s)", PUMPFUN_PROGRAM_ID)
+        log.info(
+            "schema ok; starting pipeline + graduation poller + post-grad poller (program=%s)",
+            PUMPFUN_PROGRAM_ID,
+        )
         pipeline_task = asyncio.create_task(run_pipeline(pool, helius_cfg))
         graduation_task = asyncio.create_task(run_graduation_poller(pool, helius_cfg))
+        post_grad_task = asyncio.create_task(run_post_grad_poller(pool, helius_cfg))
+        tasks = {pipeline_task, graduation_task, post_grad_task}
         try:
-            done, _ = await asyncio.wait(
-                {pipeline_task, graduation_task},
-                return_when=asyncio.FIRST_EXCEPTION,
-            )
+            done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
             for task in done:
                 task.result()  # re-raise if a task crashed
         finally:
-            graduation_task.cancel()
-            pipeline_task.cancel()
-            await asyncio.gather(pipeline_task, graduation_task, return_exceptions=True)
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
     finally:
         await pool.close()
 
