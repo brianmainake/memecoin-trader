@@ -3,7 +3,6 @@ import asyncio
 import logging
 import os
 import sys
-import time
 from pathlib import Path
 
 import asyncpg
@@ -12,7 +11,7 @@ from decoder.programs import PUMPFUN_PROGRAM_ID
 from shared.config import DatabaseConfig, HeliusConfig, load_dotenv
 
 from ingestor.capture import capture
-from ingestor.stream import stream_pumpfun_logs
+from ingestor.pipeline import run_pipeline
 
 log = logging.getLogger("ingestor")
 
@@ -31,37 +30,16 @@ async def run(args: argparse.Namespace) -> None:
         return
 
     db_cfg = DatabaseConfig.from_env()
-    conn = await asyncpg.connect(db_cfg.dsn)
+    pool = await asyncpg.create_pool(db_cfg.dsn, min_size=1, max_size=4)
     try:
-        row = await conn.fetchrow("SELECT to_regclass('public.trades') AS trades_tbl")
-        if not row or row["trades_tbl"] is None:
-            raise RuntimeError("trades table missing; run db migrations first")
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT to_regclass('public.trades') AS trades_tbl")
+            if not row or row["trades_tbl"] is None:
+                raise RuntimeError("trades table missing; run db migrations first")
+        log.info("schema ok; starting pump.fun pipeline (program=%s)", PUMPFUN_PROGRAM_ID)
+        await run_pipeline(pool, helius_cfg)
     finally:
-        await conn.close()
-
-    log.info("schema ok; subscribing to pump.fun program=%s", PUMPFUN_PROGRAM_ID)
-    await _log_stream_loop(helius_cfg)
-
-
-async def _log_stream_loop(helius_cfg: HeliusConfig) -> None:
-    received = 0
-    successful = 0
-    last_report = time.monotonic()
-    report_interval = 10.0
-
-    async for notif in stream_pumpfun_logs(helius_cfg.ws_url, PUMPFUN_PROGRAM_ID):
-        received += 1
-        if notif.err is None:
-            successful += 1
-        now = time.monotonic()
-        if now - last_report >= report_interval:
-            log.info(
-                "logs: received=%d successful=%d in %.1fs; latest sig=%s slot=%d",
-                received, successful, now - last_report, notif.signature, notif.slot,
-            )
-            received = 0
-            successful = 0
-            last_report = now
+        await pool.close()
 
 
 def entrypoint() -> None:

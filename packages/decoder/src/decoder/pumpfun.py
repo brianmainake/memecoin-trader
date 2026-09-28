@@ -7,6 +7,7 @@ from typing import Any
 from shared.events import Side, TradeEvent, Venue
 
 _LAMPORTS_PER_SOL = Decimal(10**9)
+_PRICE_QUANT = Decimal(10) ** -20  # matches trades.price_sol NUMERIC(40, 20)
 
 
 def parse_pumpfun_swap(payload: dict[str, Any]) -> TradeEvent | None:
@@ -56,7 +57,7 @@ def parse_pumpfun_swap(payload: dict[str, Any]) -> TradeEvent | None:
 
     sol_amount = sol_lamports / _LAMPORTS_PER_SOL
     token_amount = token_base_units / Decimal(10**decimals)
-    price_sol = sol_amount / token_amount
+    price_sol = (sol_amount / token_amount).quantize(_PRICE_QUANT)
 
     return TradeEvent(
         time=datetime.fromtimestamp(int(timestamp), tz=UTC),
@@ -68,6 +69,7 @@ def parse_pumpfun_swap(payload: dict[str, Any]) -> TradeEvent | None:
         side=side,
         sol_lamports=sol_lamports,
         token_base_units=token_base_units,
+        token_decimals=decimals,
         price_sol=price_sol,
         sol_usd=None,
         venue=Venue.CURVE,

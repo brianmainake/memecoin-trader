@@ -32,6 +32,7 @@ class TradeEvent:
     side: Side
     sol_lamports: Decimal
     token_base_units: Decimal
+    token_decimals: int
     price_sol: Decimal
     sol_usd: Decimal | None
     venue: Venue

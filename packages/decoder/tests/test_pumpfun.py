@@ -27,9 +27,10 @@ def test_parse_buy() -> None:
     )
     assert event.sol_lamports == Decimal("2526840")
     assert event.token_base_units == Decimal("15543906671")
+    assert event.token_decimals == 6
     expected_price = (
-        Decimal("2526840") / Decimal(10**9)
-    ) / (Decimal("15543906671") / Decimal(10**6))
+        (Decimal("2526840") / Decimal(10**9)) / (Decimal("15543906671") / Decimal(10**6))
+    ).quantize(Decimal(10) ** -20)
     assert event.price_sol == expected_price
 
 
@@ -43,6 +44,7 @@ def test_parse_sell() -> None:
     assert event.slot == 451162468
     assert event.sol_lamports == Decimal("653617770")
     assert event.token_base_units == Decimal("19022024084180")
+    assert event.token_decimals == 6
 
 
 def test_rejects_jupiter_swap() -> None:
