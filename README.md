@@ -1,4 +1,4 @@
-# memecoin-trader
+# (Experimental) memecoin-trader
 
 Personal Solana memecoin tracker (and eventually, trader). See [`CLAUDE.md`](./CLAUDE.md) for the full design and build plan, and [`docs/decisions.md`](./docs/decisions.md) for the current values of drift-prone facts (pricing, thresholds, program IDs).
 
